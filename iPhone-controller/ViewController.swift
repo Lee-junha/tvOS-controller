@@ -33,100 +33,100 @@ class ViewController: UIViewController, TVCPhoneSessionDelegate {
     
     
     @IBAction func button1Pressed() {
-        send("Button", text: 1)
+        send("Button", text: 1 as Any)
         buttonEnabled = 1
         
         //set up accelerometer readings
         
-        if motion.deviceMotionAvailable {
+        if motion.isDeviceMotionAvailable {
             motion.deviceMotionUpdateInterval = 0.5
-            motion.startDeviceMotionUpdatesToQueue(NSOperationQueue.mainQueue(), withHandler: { (data: CMDeviceMotion?, error :NSError?) -> Void in
+            motion.startDeviceMotionUpdates(to: OperationQueue.main, withHandler: { (data: CMDeviceMotion?, error :NSError?) -> Void in
                 if error == nil && data != nil {
                     
                     let temp = data!.attitude
                     
                     let accel : [Float] = [Float(temp.pitch), Float(temp.yaw), Float(temp.roll)]
-                    self.send("Accelerometer", text: accel)
+                    self.send("Accelerometer", text: accel as Any)
                 }else {
                     self.write((error?.localizedDescription)!)
                 }
-            })
+            } as! CMDeviceMotionHandler)
         }
 
     }
 
     @IBAction func button2Pressed() {
-        send("Button", text: 2)
+        send("Button", text: 2 as Any)
         buttonEnabled = 2
         motion.stopDeviceMotionUpdates()
 
     }
     @IBAction func button3Pressed() {
-        send("Button", text: 3)
+        send("Button", text: 3 as Any)
         buttonEnabled = 3
         motion.stopDeviceMotionUpdates()
 
     }
     //Button tap controls
-    @IBAction func OnAccelerateTapped(sender: UIButton) {
+    @IBAction func OnAccelerateTapped(_ sender: UIButton) {
         //Note: Touch inside disables the time the same way touch outside does,
         //      so the user can hold the button to gain acceleration
         // 1  - accelerate
         // 0  - release
         // -1 - break
-        send("Speed", text: 0)
+        send("Speed", text: 0 as Any)
     }
     
-    @IBAction func OnAccelerateReleased(sender: UIButton) {
-        send("Speed", text: 0)
+    @IBAction func OnAccelerateReleased(_ sender: UIButton) {
+        send("Speed", text: 0 as Any)
         
     }
     
-    @IBAction func AcceleratePressed(sender: UIButton) {
-        send("Speed", text: 1)
+    @IBAction func AcceleratePressed(_ sender: UIButton) {
+        send("Speed", text: 1 as Any)
     }
     
 
-    @IBAction func OnBreakTapped(sender: UIButton) {
-        send("Speed", text: 0)
+    @IBAction func OnBreakTapped(_ sender: UIButton) {
+        send("Speed", text: 0 as Any)
     }
     
-    @IBAction func BreakPressed(sender: UIButton) {
-        send("Speed", text: -1)
+    @IBAction func BreakPressed(_ sender: UIButton) {
+        send("Speed", text: -1 as Any)
     }
     
-    @IBAction func OnBreakReleased(sender: UIButton) {
-        send("Speed", text: 0)
+    @IBAction func OnBreakReleased(_ sender: UIButton) {
+        send("Speed", text: 0 as Any)
     }
     
-    override func touchesBegan(touches: Set<UITouch>, withEvent event: UIEvent?) {
+    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         swiped = false
 
         if touches.first != nil {
             let touch = touches.first!
             if buttonEnabled == 2 {
-            point = touch.locationInView(self.view)
+            point = touch.location(in: self.view)
             
             send("DrawBegin", text: [point.x, point.y])
             }
         }
-        super.touchesBegan(touches, withEvent: event)
+        super.touchesBegan(touches, with: event)
     }
     
-    override func touchesMoved(touches: Set<UITouch>, withEvent event: UIEvent?) {
+    override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
         swiped = true
         
         if touches.first != nil {
             let touch = touches.first!
             if buttonEnabled == 2 {
-                let currentPoint : CGPoint = touch.locationInView(view)
+                let currentPoint : CGPoint = touch.location(in: view)
                 send("DrawMove", text: [currentPoint.x, currentPoint.y])
                 point = currentPoint
             }
         }
     }
     
-    override func touchesEnded(touches: Set<UITouch>, withEvent event: UIEvent?) {
+    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
         if !swiped {
             if buttonEnabled == 2 {
                 send("DrawEnd", text: [point.x, point.y])
@@ -137,16 +137,16 @@ class ViewController: UIViewController, TVCPhoneSessionDelegate {
     override func viewDidLoad() {
         super.viewDidLoad()
         self.remote.delegate = self
-        self.view?.multipleTouchEnabled = true
+        self.view?.isMultipleTouchEnabled = true
         
         // Do any additional setup after loading the view, typically from a nib.
     }
     
-    override func viewDidAppear(animated: Bool) {
+    override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         
-        let value = UIInterfaceOrientation.LandscapeLeft.rawValue
-        UIDevice.currentDevice().setValue(value, forKey: "orientation")
+        let value = UIInterfaceOrientation.landscapeLeft.rawValue
+        UIDevice.current.setValue(value, forKey: "orientation")
     }
 
     override func didReceiveMemoryWarning() {
@@ -155,7 +155,7 @@ class ViewController: UIViewController, TVCPhoneSessionDelegate {
     }
 
 
-    private func send(identifier: String, text:AnyObject) {
+    fileprivate func send(_ identifier: String, text:Any) {
         self.write("\(text)")
         self.remote.sendMessage([identifier:text], replyHandler: { (reply) -> Void in
             self.write("Reply received: \(reply)")
@@ -169,8 +169,8 @@ class ViewController: UIViewController, TVCPhoneSessionDelegate {
                  self.write("ERROR : \(error)")
         }
     }
-    private func write(text:String) {
-        dispatch_async(dispatch_get_main_queue()) {
+    fileprivate func write(_ text:String) {
+        DispatchQueue.main.async {
             let existingText = self.textMessage.text!
             self.textMessage.text = "\(existingText)\n\(text)"
         }
@@ -182,19 +182,19 @@ class ViewController: UIViewController, TVCPhoneSessionDelegate {
     func didDisconnect() {
         self.write("Disconnected")
     }
-    func didReceiveBroadcast(message: [String : AnyObject]) {
+    func didReceiveBroadcast(_ message: [String : Any]) {
         self.write("Broadcast received: \(message)")
     }
-    func didReceiveBroadcast(message: [String : AnyObject], replyHandler: ([String : AnyObject]) -> Void) {
+    func didReceiveBroadcast(_ message: [String : Any], replyHandler: ([String : Any]) -> Void) {
         self.didReceiveBroadcast(message)
-        replyHandler(["Reply":0])
+        replyHandler(["Reply":0 as Any])
     }
-    func didReceiveMessage(message: [String : AnyObject]) {
+    func didReceiveMessage(_ message: [String : Any]) {
         self.write("Message received: \(message)")
     }
-    func didReceiveMessage(message: [String : AnyObject], replyHandler: ([String : AnyObject]) -> Void) {
+    func didReceiveMessage(_ message: [String : Any], replyHandler: ([String : Any]) -> Void) {
         self.didReceiveMessage(message)
-        replyHandler(["Reply":0])
+        replyHandler(["Reply":0 as Any])
     }
     
 }

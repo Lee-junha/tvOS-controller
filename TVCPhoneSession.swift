@@ -20,11 +20,11 @@ protocol TVCPhoneSessionDelegate : class {
     func didConnect()
     func didDisconnect()
     
-    func didReceiveBroadcast(message: [String : AnyObject], replyHandler: ([String : AnyObject]) -> Void)
-    func didReceiveBroadcast(message: [String : AnyObject])
+    func didReceiveBroadcast(_ message: [String : Any], replyHandler: ([String : Any]) -> Void)
+    func didReceiveBroadcast(_ message: [String : Any])
     
-    func didReceiveMessage(message: [String : AnyObject])
-    func didReceiveMessage(message: [String : AnyObject], replyHandler: ([String : AnyObject]) -> Void)
+    func didReceiveMessage(_ message: [String : Any])
+    func didReceiveMessage(_ message: [String : Any], replyHandler: ([String : Any]) -> Void)
     
 }
 
@@ -32,33 +32,34 @@ protocol TVCPhoneSessionDelegate : class {
 
 @available(iOS 9.0, *)
 @objc
-public class TVCPhoneSession : NSObject, NSNetServiceBrowserDelegate, NSNetServiceDelegate, GCDAsyncSocketDelegate {
+open class TVCPhoneSession : NSObject, NetServiceBrowserDelegate, NetServiceDelegate, GCDAsyncSocketDelegate {
     
     weak var delegate:TVCPhoneSessionDelegate?
 
-    internal let coServiceBrowser = NSNetServiceBrowser()
+    internal let coServiceBrowser = NetServiceBrowser()
     internal var dictSockets:[String:GCDAsyncSocket] =  [:]
-    internal var arrDevices:Set<NSNetService> = []
+    internal var arrDevices:Set<NetService> = []
 
-    internal var replyGroups:[Int:dispatch_group_t] = [:]
-    internal var replyMessages:[Int:[String:AnyObject]] = [:]
+    internal var replyGroups:[Int:DispatchGroup] = [:]
+    internal var replyMessages:[Int:[String:Any]] = [:]
     internal var replyIdentifierCounter:Int = 0
 
-    public var connected:Bool {
+    open var connected:Bool {
         return self.selectedSocket != nil
     }
     
-    public func sendMessage(message: [String : AnyObject], replyHandler: (([String : AnyObject]) -> Void)?, errorHandler: ((NSError) -> Void)?) {
+    open func sendMessage(_ message: [String : Any], replyHandler: (([String : Any]) -> Void)?, errorHandler: ((NSError) -> Void)?) {
         
         if let selSock = self.selectedSocket {
             if let rh = replyHandler {
-                let replyKey = ++replyIdentifierCounter
-                let group = dispatch_group_create()
+                replyIdentifierCounter = replyIdentifierCounter + 1
+                let replyKey = replyIdentifierCounter
+                let group = DispatchGroup()
                 replyGroups[replyKey] = group
                 
-                dispatch_group_enter(group)
-                dispatch_group_notify(group, dispatch_get_main_queue()) {
-                    if let reply = self.replyMessages.removeValueForKey(replyKey) {
+                group.enter()
+                group.notify(queue: DispatchQueue.main) {
+                    if let reply = self.replyMessages.removeValue(forKey: replyKey) {
                         rh(reply)
                     }
                     else {
@@ -90,19 +91,19 @@ public class TVCPhoneSession : NSObject, NSNetServiceBrowserDelegate, NSNetServi
     override init() {
         super.init()
         self.coServiceBrowser.delegate = self
-        self.coServiceBrowser.searchForServicesOfType(SERVICE_NAME, inDomain: "local.")
+        self.coServiceBrowser.searchForServices(ofType: SERVICE_NAME, inDomain: "local.")
     }
     
-    func connectWithServer(service:NSNetService) -> Bool {
-        if let coSocket = self.dictSockets[service.name] where coSocket.isConnected() {
+    func connectWithServer(_ service:NetService) -> Bool {
+        if let coSocket = self.dictSockets[service.name], coSocket.isConnected() {
             return true
         }
-        let coSocket = GCDAsyncSocket(delegate: self, delegateQueue: dispatch_get_main_queue())
+        let coSocket = GCDAsyncSocket(delegate: self, delegateQueue: DispatchQueue.main)
         
         if let addrs = service.addresses {
             for address in addrs {
                 do {
-                    try coSocket.connectToAddress(address)
+                    try coSocket?.connect(toAddress: address)
                     self.dictSockets[service.name] = coSocket
                     return true
                 }
@@ -116,46 +117,46 @@ public class TVCPhoneSession : NSObject, NSNetServiceBrowserDelegate, NSNetServi
     }
     
     // MARK: NSNetServiceBrowserDelegate
-    public func netServiceBrowserDidStopSearch(browser: NSNetServiceBrowser) {
+    open func netServiceBrowserDidStopSearch(_ browser: NetServiceBrowser) {
         self.coServiceBrowser.stop()
-        self.coServiceBrowser.searchForServicesOfType(SERVICE_NAME, inDomain: "local.")
+        self.coServiceBrowser.searchForServices(ofType: SERVICE_NAME, inDomain: "local.")
         print("Browsing Stopped")
     }
-    public func netServiceBrowser(browser: NSNetServiceBrowser, didNotSearch errorDict: [String : NSNumber]) {
+    open func netServiceBrowser(_ browser: NetServiceBrowser, didNotSearch errorDict: [String : NSNumber]) {
         self.coServiceBrowser.stop()
-        self.coServiceBrowser.searchForServicesOfType(SERVICE_NAME, inDomain: "local.")
+        self.coServiceBrowser.searchForServices(ofType: SERVICE_NAME, inDomain: "local.")
         print("Browsing Stopped")
     }
-    public func netServiceBrowser(browser: NSNetServiceBrowser, didRemoveService service: NSNetService, moreComing: Bool) {
+    open func netServiceBrowser(_ browser: NetServiceBrowser, didRemove service: NetService, moreComing: Bool) {
         self.arrDevices.remove(service)
     }
-    public func netServiceBrowser(browser: NSNetServiceBrowser, didFindService service: NSNetService, moreComing: Bool) {
+    open func netServiceBrowser(_ browser: NetServiceBrowser, didFind service: NetService, moreComing: Bool) {
         if service.name == NET_SERVICE_NAME {
             self.arrDevices.insert(service)
             service.delegate = self
-            service.resolveWithTimeout(30.0)
+            service.resolve(withTimeout: 30.0)
         }
     }
     
     
     // MARK: NSNetServiceDelegate
-    public func netService(sender: NSNetService, didNotResolve errorDict: [String : NSNumber]) {
+    open func netService(_ sender: NetService, didNotResolve errorDict: [String : NSNumber]) {
         sender.delegate = self
     }
-    public func netServiceDidResolveAddress(sender: NSNetService) {
+    open func netServiceDidResolveAddress(_ sender: NetService) {
         self.connectWithServer(sender)
     }
     
 
     // MARK: GCDAsyncSocketDelegate
-    public func socket(sock: GCDAsyncSocket!, didConnectToHost host: String!, port: UInt16) {
-        sock.readDataWithTimeout(-1.0, tag: 0)
+    open func socket(_ sock: GCDAsyncSocket!, didConnectToHost host: String!, port: UInt16) {
+        sock.readData(withTimeout: -1.0, tag: 0)
         
         sock.sendMessageObject(Message(type: .SendingDeviceID))
         
         delegate?.didConnect()
     }
-    public func socketDidDisconnect(sock: GCDAsyncSocket!, withError err: NSError!) {
+    open func socketDidDisconnect(_ sock: GCDAsyncSocket!, withError err: NSError!) {
         delegate?.didDisconnect()
         
         // clearout pending replies and generate errors for them
@@ -163,26 +164,26 @@ public class TVCPhoneSession : NSObject, NSNetServiceBrowserDelegate, NSNetServi
         let groups = replyGroups.map { $0.1 }
         replyGroups.removeAll()
         for group in groups {
-            dispatch_group_leave(group)
+            group.leave()
         }
     }
 
     // curried function to send the user's reply to the sender
     // calling with the first set of arguments returns another function which the user then calls
-    private func sendReply(sock: GCDAsyncSocket, _ replyID:Int)(reply:[String:AnyObject]) {
+    fileprivate func sendReply(_ sock: GCDAsyncSocket, _ replyID:Int, _ reply:[String:Any]) {
         sock.sendMessageObject(Message(type: .Reply, replyID: replyID, contents: reply))
     }
-    public func socket(sock: GCDAsyncSocket!, didReadData data: NSData!, withTag tag: Int) {
-        sock.readDataWithTimeout(-1.0, tag: 0)
+    open func socket(_ sock: GCDAsyncSocket!, didRead data: Data!, withTag tag: Int) {
+        sock.readData(withTimeout: -1.0, tag: 0)
         
         if let message = Message(data: data) {
             switch message.type {
             case .Reply:
-                if let replyID = message.replyID, let group = replyGroups.removeValueForKey(replyID) {
+                if let replyID = message.replyID, let group = replyGroups.removeValue(forKey: replyID) {
                     if let reply = message.contents {
-                        replyMessages[replyID] = reply
+                        replyMessages[replyID] = reply as [String : Any]?
                     }
-                    dispatch_group_leave(group)
+                    group.leave()
                 }
                 else {
                     print("Unable to process reply. Reply received for unknown originator or duplicate reply")
@@ -192,10 +193,10 @@ public class TVCPhoneSession : NSObject, NSNetServiceBrowserDelegate, NSNetServi
             case .Broadcast:
                 if let contents = message.contents {
                     if let replyID = message.replyID {
-                        self.delegate?.didReceiveBroadcast(contents, replyHandler: sendReply(sock, replyID))
+//                        self.delegate?.didReceiveBroadcast(contents as [String : Any], replyHandler: sendReply(sock, replyID))
                     }
                     else {
-                        self.delegate?.didReceiveBroadcast(contents)
+                        self.delegate?.didReceiveBroadcast(contents as [String : Any])
                     }
                 }
                 else {
@@ -205,10 +206,10 @@ public class TVCPhoneSession : NSObject, NSNetServiceBrowserDelegate, NSNetServi
             case .Message:
                 if let contents = message.contents {
                     if let replyID = message.replyID {
-                        self.delegate?.didReceiveMessage(contents, replyHandler: sendReply(sock, replyID))
+//                        self.delegate?.didReceiveMessage(contents as [String : Any], replyHandler: sendReply(sock, replyID))
                     }
                     else {
-                        self.delegate?.didReceiveMessage(contents)
+                        self.delegate?.didReceiveMessage(contents as [String : Any])
                     }
                 }
                 else {
@@ -223,10 +224,10 @@ public class TVCPhoneSession : NSObject, NSNetServiceBrowserDelegate, NSNetServi
         }
         else {
             print("Unknown Data: \(data)")
-            if let testString = String(data: data, encoding: NSUTF8StringEncoding) {
+            if let testString = String(data: data, encoding: String.Encoding.utf8) {
                 print("       UTF8 : \(testString)")
             }
-            else if let testString = String(data: data, encoding: NSWindowsCP1250StringEncoding) {
+            else if let testString = String(data: data, encoding: String.Encoding.windowsCP1250) {
                 print("     CP1250 : \(testString)")
             }
         }

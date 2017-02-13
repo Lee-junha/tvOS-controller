@@ -9,7 +9,7 @@
 import UIKit
 
 class PlayerSelectController: UIViewController, TVCPhoneSessionDelegate {
-    
+
     let remote = TVCPhoneSession()
     
     @IBOutlet weak var playerslabel: UILabel!
@@ -37,26 +37,26 @@ class PlayerSelectController: UIViewController, TVCPhoneSessionDelegate {
         // Dispose of any resources that can be recreated.
     }
     
-    override func prepareForSegue(segue: UIStoryboardSegue, sender: AnyObject?) {
+    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         if segue.identifier == "Start" {
-            if let vc = segue.destinationViewController as? ViewController {
+            if let vc = segue.destination as? ViewController {
                 vc.remote = remote
             }
         }
     }
     
-    @IBAction func ChangeColourRight(sender: UIButton) {
-        send("Colour", text: 1)
+    @IBAction func ChangeColourRight(_ sender: UIButton) {
+        send("Colour", text: 1 as AnyObject)
     }
     
     
-    @IBAction func ChangeColourLeft(sender: UIButton) {
-        send("Colour", text: -1)
+    @IBAction func ChangeColourLeft(_ sender: UIButton) {
+        send("Colour", text: -1 as AnyObject)
     }
 
-    @IBAction func Ready(sender: UIButton) {
+    @IBAction func Ready(_ sender: UIButton) {
         readyToRace = !readyToRace
-        send("Ready", text: readyToRace)
+        send("Ready", text: readyToRace as AnyObject)
     }
     /*
     // MARK: - Navigation
@@ -68,7 +68,7 @@ class PlayerSelectController: UIViewController, TVCPhoneSessionDelegate {
     }
     */
     
-    private func send(identifier: String, text:AnyObject) {
+    fileprivate func send(_ identifier: String, text:AnyObject) {
         print("\(text)")
         self.remote.sendMessage([identifier:text], replyHandler: { (reply) -> Void in
             print("Reply received: \(reply)")
@@ -90,19 +90,35 @@ class PlayerSelectController: UIViewController, TVCPhoneSessionDelegate {
         activityView.startAnimating()
         print("Disconnected")
     }
-    func didReceiveBroadcast(message: [String : AnyObject]) {
+//    func didReceiveBroadcast(_ message: [String : AnyObject]) {
+//        print("Broadcast received: \(message)")
+//    }
+//    func didReceiveBroadcast(_ message: [String : AnyObject], replyHandler: ([String : AnyObject]) -> Void) {
+//        self.didReceiveBroadcast(message)
+//        replyHandler(["Reply":0 as AnyObject])
+//    }
+//    func didReceiveMessage(_ message: [String : AnyObject]) {
+//        print("Message received: \(message)")
+//    }
+//    func didReceiveMessage(_ message: [String : AnyObject], replyHandler: ([String : AnyObject]) -> Void) {
+//        self.didReceiveMessage(message)
+//        replyHandler(["Reply":0 as AnyObject])
+//    }
+    
+    internal func didReceiveBroadcast(_ message: [String : Any]) {
         print("Broadcast received: \(message)")
     }
-    func didReceiveBroadcast(message: [String : AnyObject], replyHandler: ([String : AnyObject]) -> Void) {
+    
+    internal func didReceiveBroadcast(_ message: [String : Any], replyHandler: ([String : Any]) -> Void) {
         self.didReceiveBroadcast(message)
-        replyHandler(["Reply":0])
+        replyHandler(["Reply":0 as Any])
     }
-    func didReceiveMessage(message: [String : AnyObject]) {
-        print("Message received: \(message)")
+    internal func didReceiveMessage(_ message: [String : Any]) {
+         print("Message received: \(message)")
     }
-    func didReceiveMessage(message: [String : AnyObject], replyHandler: ([String : AnyObject]) -> Void) {
+    internal func didReceiveMessage(_ message: [String : Any], replyHandler: ([String : Any]) -> Void) {
         self.didReceiveMessage(message)
-        replyHandler(["Reply":0])
+        replyHandler(["Reply":0 as Any])
     }
 
 }

@@ -27,7 +27,7 @@ class ViewController: UIViewController, TVCTVSessionDelegate, SCNSceneRendererDe
     @IBOutlet weak var DrawCanvas : UIImageView!
     
     var gameObjects = [GameObject]()
-    var timer = NSTimer()
+    var timer = Timer()
     
     //vehicles
     var vehicle: SCNPhysicsVehicle?
@@ -79,12 +79,12 @@ class ViewController: UIViewController, TVCTVSessionDelegate, SCNSceneRendererDe
         // Dispose of any resources that can be recreated.
     }
     
-    func renderer(renderer: SCNSceneRenderer, updateAtTime time: NSTimeInterval) {
+    func renderer(_ renderer: SCNSceneRenderer, updateAtTime time: TimeInterval) {
         
         //called first, any pre-render game logic here
     }
     
-    func renderer(renderer: SCNSceneRenderer, didSimulatePhysicsAtTime time: NSTimeInterval) {
+    func renderer(_ renderer: SCNSceneRenderer, didSimulatePhysicsAtTime time: TimeInterval) {
         
         //physics updates here
         
@@ -100,11 +100,11 @@ class ViewController: UIViewController, TVCTVSessionDelegate, SCNSceneRendererDe
         }
     }
     
-    func updateCar(delta: NSTimeInterval) {
+    func updateCar(_ delta: TimeInterval) {
         
         //move car in the direction it is currently facing
 
-        carNode.runAction(SCNAction.moveByX(CGFloat(vectorToMoveBy.x * Float(delta) * (accel)), y: 0.0, z: CGFloat(vectorToMoveBy.z * Float(delta) * (accel)), duration: delta))
+        carNode.runAction(SCNAction.moveBy(x: CGFloat(vectorToMoveBy.x * Float(delta) * (accel)), y: 0.0, z: CGFloat(vectorToMoveBy.z * Float(delta) * (accel)), duration: delta))
         speed = vectorToMoveBy.magnitudeSquared()
         cameraNode.position = SCNVector3(carNode.position.x + 10, carNode.position.y + 10, carNode.position.z)
 //        if isSlerping {
@@ -127,7 +127,7 @@ class ViewController: UIViewController, TVCTVSessionDelegate, SCNSceneRendererDe
         
             let angle = (currentYPR[0]) //pitch
             
-            carNode.runAction((SCNAction.rotateByAngle(CGFloat(angle * Float(delta)), aroundAxis: SCNVector3(0, 1, 0), duration: delta)), completionHandler: { () -> Void in
+            carNode.runAction((SCNAction.rotate(by: CGFloat(angle * Float(delta)), around: SCNVector3(0, 1, 0), duration: delta)), completionHandler: { () -> Void in
                 self.intialYPR = self.currentYPR
             })
             
@@ -153,14 +153,14 @@ class ViewController: UIViewController, TVCTVSessionDelegate, SCNSceneRendererDe
         cameraNode.position = SCNVector3(-10.0, 10.0, 10.0)
         
         let ambientLight = SCNLight()
-        ambientLight.type = SCNLightTypeAmbient
+        ambientLight.type = SCNLight.LightType.ambient
         ambientLight.color = UIColor(red: 0.5, green: 0.5, blue: 0.0, alpha: 1.0)
         cameraNode.light = ambientLight
         
         //light
         
         let light = SCNLight()
-        light.type = SCNLightTypeDirectional
+        light.type = SCNLight.LightType.directional
         light.castsShadow = true
         
         lightNode.light = light
@@ -189,11 +189,11 @@ class ViewController: UIViewController, TVCTVSessionDelegate, SCNSceneRendererDe
         //add some placed boxes
         let box = SCNBox(width: 1.0, height: 1.0, length: 1.0, chamferRadius: 0.0)
         let boxMaterial = SCNMaterial()
-        boxMaterial.diffuse.contents = UIColor.redColor()
+        boxMaterial.diffuse.contents = UIColor.red
         box.materials = [boxMaterial]
         boxNode.position = SCNVector3(x: 5.0, y: 0.0, z: 5.0)
         let physicsBox = SCNPhysicsShape(geometry: box, options: nil)
-        let boxBody = SCNPhysicsBody(type: .Static, shape: physicsBox)
+        let boxBody = SCNPhysicsBody(type: .static, shape: physicsBox)
         boxNode = SCNNode(geometry: box)
         boxNode.physicsBody = boxBody
         boxNode2 = boxNode
@@ -210,9 +210,9 @@ class ViewController: UIViewController, TVCTVSessionDelegate, SCNSceneRendererDe
         let ground = SCNFloor()
         ground.reflectivity = 0
         let groundMaterial = SCNMaterial()
-        groundMaterial.diffuse.contents = UIColor.blueColor()
+        groundMaterial.diffuse.contents = UIColor.blue
         let physicsShape = SCNPhysicsShape(geometry: SCNFloor(), options: nil)
-        let body = SCNPhysicsBody(type: .Static, shape: physicsShape)
+        let body = SCNPhysicsBody(type: .static, shape: physicsShape)
         ground.materials = [groundMaterial]
         groundNode = SCNNode(geometry: ground)
         groundNode.physicsBody = body
@@ -230,10 +230,10 @@ class ViewController: UIViewController, TVCTVSessionDelegate, SCNSceneRendererDe
     
     func setupPlayers() {
         //four 'players'
-        for (var i = 0; i < numberOfPlayers; i++) {
+        for i in 0 ..< numberOfPlayers {
             if let carScene : SCNScene = SCNScene(named: "gameAssets.scnassets/rc_car.dae") {
                 
-                if let chassisNode : SCNNode = carScene.rootNode.childNodeWithName("rccarBody", recursively: false) {
+                if let chassisNode : SCNNode = carScene.rootNode.childNode(withName: "rccarBody", recursively: false) {
                     
                     chassisNode.position = SCNVector3Make(Float(i * 10), 10.0, 0)
                     chassisNode.rotation = SCNVector4Make(0, 1, 0, Float(M_PI))
@@ -243,7 +243,7 @@ class ViewController: UIViewController, TVCTVSessionDelegate, SCNSceneRendererDe
                         chassisNode.geometry!.materials[0].diffuse.contents = setPlayerColours(i)
                     }
                     
-                    let body : SCNPhysicsBody = SCNPhysicsBody.dynamicBody()
+                    let body : SCNPhysicsBody = SCNPhysicsBody.dynamic()
                     body.allowsResting = false
                     body.mass = 80
                     body.restitution = 0.1
@@ -255,10 +255,10 @@ class ViewController: UIViewController, TVCTVSessionDelegate, SCNSceneRendererDe
                     
                     //wheels
                     
-                    if let wheelNode1 : SCNNode = chassisNode.childNodeWithName("wheelLocator_FL", recursively: true) {
-                        if let wheelNode2 : SCNNode = chassisNode.childNodeWithName("wheelLocator_FR", recursively: true) {
-                            if let wheelNode3 : SCNNode = chassisNode.childNodeWithName("wheelLocator_RL", recursively: true) {
-                                if let wheelNode4 : SCNNode = chassisNode.childNodeWithName("wheelLocator_RR", recursively: true) {
+                    if let wheelNode1 : SCNNode = chassisNode.childNode(withName: "wheelLocator_FL", recursively: true) {
+                        if let wheelNode2 : SCNNode = chassisNode.childNode(withName: "wheelLocator_FR", recursively: true) {
+                            if let wheelNode3 : SCNNode = chassisNode.childNode(withName: "wheelLocator_RL", recursively: true) {
+                                if let wheelNode4 : SCNNode = chassisNode.childNode(withName: "wheelLocator_RR", recursively: true) {
                                     
                                     let wheel1 = SCNPhysicsVehicleWheel(node: wheelNode1)
                                     let wheel2 = SCNPhysicsVehicleWheel(node: wheelNode2)
@@ -268,17 +268,17 @@ class ViewController: UIViewController, TVCTVSessionDelegate, SCNSceneRendererDe
                                     var min = SCNVector3Zero
                                     var max = SCNVector3Zero
                                     
-                                    wheelNode1.getBoundingBoxMin(&min, max: &max)
+                                    wheelNode1.__setBoundingBoxMin(&min, max: &max)
                                     let wheelHalfWidth : Float = (Float(0.5) * (max.x - min.x))
                                     
                                     wheel1.connectionPosition =
-                                        wheelNode1.convertPosition(SCNVector3Zero, toNode: chassisNode) + SCNVector3(wheelHalfWidth, 0.0, 0.0)
+                                        wheelNode1.convertPosition(SCNVector3Zero, to: chassisNode) + SCNVector3(wheelHalfWidth, 0.0, 0.0)
                                     wheel2.connectionPosition =
-                                        wheelNode2.convertPosition(SCNVector3Zero, toNode: chassisNode) - SCNVector3(wheelHalfWidth, 0.0, 0.0)
+                                        wheelNode2.convertPosition(SCNVector3Zero, to: chassisNode) - SCNVector3(wheelHalfWidth, 0.0, 0.0)
                                     wheel3.connectionPosition =
-                                        wheelNode3.convertPosition(SCNVector3Zero, toNode: chassisNode) + SCNVector3(wheelHalfWidth, 0.0, 0.0)
+                                        wheelNode3.convertPosition(SCNVector3Zero, to: chassisNode) + SCNVector3(wheelHalfWidth, 0.0, 0.0)
                                     wheel4.connectionPosition =
-                                        wheelNode4.convertPosition(SCNVector3Zero, toNode: chassisNode) - SCNVector3(wheelHalfWidth, 0.0, 0.0)
+                                        wheelNode4.convertPosition(SCNVector3Zero, to: chassisNode) - SCNVector3(wheelHalfWidth, 0.0, 0.0)
                                     
                                     let vehicle = SCNPhysicsVehicle(chassisBody: chassisNode.physicsBody!, wheels: [wheel1, wheel2, wheel3, wheel4])
                                     
@@ -305,15 +305,16 @@ class ViewController: UIViewController, TVCTVSessionDelegate, SCNSceneRendererDe
                         }
                     }
                 }
-     
             }
         }
-        
+//        for i in 0..< numberOfPlayers {
+//            //            }
+//        }
     }
     
     func setupTrack() {
         if let trackScene : SCNScene = SCNScene(named: "gameAssets.scnassets/BasicTrack.dae") {
-            if let tempNode  = trackScene.rootNode.childNodeWithName("BezierCircle", recursively: true) {
+            if let tempNode  = trackScene.rootNode.childNode(withName: "BezierCircle", recursively: true) {
                 trackNode = tempNode
                 
                 trackNode.position = SCNVector3(x: 0.0, y: 0.0, z: 0.0)
@@ -321,7 +322,7 @@ class ViewController: UIViewController, TVCTVSessionDelegate, SCNSceneRendererDe
                 let geometry = trackNode.geometry
                 let shape = SCNPhysicsShape(geometry: geometry!, options: nil)
                 
-                let body = SCNPhysicsBody(type: .Kinematic, shape: shape)
+                let body = SCNPhysicsBody(type: .kinematic, shape: shape)
                 
                 trackNode.physicsBody = body
                 
@@ -332,40 +333,40 @@ class ViewController: UIViewController, TVCTVSessionDelegate, SCNSceneRendererDe
         }
     }
     
-    func setPlayerColours( i : Int) -> UIColor {
+    func setPlayerColours( _ i : Int) -> UIColor {
         switch i {
         case 0:
-            return UIColor.redColor()
+            return UIColor.red
         case 1:
-            return UIColor.yellowColor()
+            return UIColor.yellow
         case 2:
-            return UIColor.greenColor()
+            return UIColor.green
         case 3:
-            return UIColor.blueColor()
+            return UIColor.blue
         default:
-            return UIColor.blackColor()
+            return UIColor.black
         }
     }
     
     @IBAction func button1Pressed() {
         sendButtonPressed("Button 1")
-        DrawCanvas.hidden = true
+        DrawCanvas.isHidden = true
        // messageView.hidden = false
     }
     
     @IBAction func button2Pressed() {
         sendButtonPressed("Button 2")
-        DrawCanvas.hidden = false
-        messageView.hidden = true
+        DrawCanvas.isHidden = false
+        messageView.isHidden = true
     }
     @IBAction func button3Pressed() {
         sendButtonPressed("Button 3")
     }
     
-    private func sendButtonPressed(buttonText:String) {
+    fileprivate func sendButtonPressed(_ buttonText:String) {
         self.write(buttonText)
         remote.broadcastMessage(["ButtonPressed":buttonText], replyHandler: {
-            (deviceID:String, reply:[String : AnyObject]) -> Void in
+            (deviceID:String, reply:[String : Any]) -> Void in
             
             self.write("Reply from \(deviceID) - \(reply)")
             
@@ -375,28 +376,28 @@ class ViewController: UIViewController, TVCTVSessionDelegate, SCNSceneRendererDe
         }
     }
     
-    private func write(line:String) {
-        dispatch_async(dispatch_get_main_queue()) {
+    fileprivate func write(_ line:String) {
+        DispatchQueue.main.async {
             let existingText = self.messageView.text!
             self.messageView.text = "\(existingText)\n\(line)"
         }
     }
     
-    func drawLineFrom(fromPoint: CGPoint, toPoint: CGPoint) {
+    func drawLineFrom(_ fromPoint: CGPoint, toPoint: CGPoint) {
         
         UIGraphicsBeginImageContext(DrawCanvas.frame.size)
         let context = UIGraphicsGetCurrentContext()
-        DrawCanvas.image?.drawInRect(CGRect(x : 0 , y: 0, width: DrawCanvas.frame.size.width, height: DrawCanvas.frame.size.height))
+        DrawCanvas.image?.draw(in: CGRect(x : 0 , y: 0, width: DrawCanvas.frame.size.width, height: DrawCanvas.frame.size.height))
         
-        CGContextMoveToPoint(context, fromPoint.x, fromPoint.y)
-        CGContextAddLineToPoint(context, toPoint.x, toPoint.y)
+        context?.move(to: CGPoint(x: fromPoint.x, y: fromPoint.y))
+        context?.addLine(to: CGPoint(x: toPoint.x, y: toPoint.y))
         
-        CGContextSetLineCap(context, CGLineCap.Round)
-        CGContextSetLineWidth(context, 5.0)
-        CGContextSetRGBStrokeColor(context, 0.0, 0.0, 0.0, 1.0)
-        CGContextSetBlendMode(context, CGBlendMode.Normal)
+        context?.setLineCap(CGLineCap.round)
+        context?.setLineWidth(5.0)
+        context?.setStrokeColor(red: 0.0, green: 0.0, blue: 0.0, alpha: 1.0)
+        context?.setBlendMode(CGBlendMode.normal)
         
-        CGContextStrokePath(context)
+        context?.strokePath()
         
         DrawCanvas.image = UIGraphicsGetImageFromCurrentImageContext()
         DrawCanvas.alpha = 1.0
@@ -404,22 +405,26 @@ class ViewController: UIViewController, TVCTVSessionDelegate, SCNSceneRendererDe
         
     }
     
-    func didReceiveMessage(message: [String : AnyObject], fromDevice: String) {
+    func didReceiveMessage(_ message: [String : Any], fromDevice: String) {
         self.write("Message received: \(message) from: \(fromDevice)")
     }
-    func didReceiveMessage(message: [String : AnyObject], fromDevice: String, replyHandler: ([String : AnyObject]) -> Void) {
+    func didReceiveMessage(_ message: [String : Any], fromDevice: String, replyHandler: ([String : Any]) -> Void) {
         self.didReceiveMessage(message, fromDevice: fromDevice)
         var foundPlayerFromDevice = -1
         //link device to player
-        for (var i = 0; i < gameObjects.count && foundPlayerFromDevice == -1; i++ ){
-            
-            if gameObjects[i].playerID == nil { //no device ID
-                gameObjects[i].playerID = fromDevice
-                foundPlayerFromDevice = i
-            } else if gameObjects[i].playerID == fromDevice {
-                foundPlayerFromDevice = i
-            }
-        }
+//        for var i in 0 ..< gameObjects.count && foundPlayerFromDevice == -1 {
+//            i = i + 1
+//            if gameObjects[i].playerID == nil { //no device ID
+//                gameObjects[i].playerID = fromDevice
+//                foundPlayerFromDevice = i
+//            } else if gameObjects[i].playerID == fromDevice {
+//                foundPlayerFromDevice = i
+//            }
+//        }
+//        for (var i = 0; i < gameObjects.count && foundPlayerFromDevice == -1; i += 1 ){
+//            
+//
+//        }
         
         print("Device \(fromDevice) is attached to Player \(foundPlayerFromDevice)")
         
@@ -509,16 +514,17 @@ class ViewController: UIViewController, TVCTVSessionDelegate, SCNSceneRendererDe
             //timer = NSTimer.scheduledTimerWithTimeInterval(0.5, target: self, selector: Selector("OnTimerFired"), userInfo: nil, repeats: true)
             
         }
-        replyHandler(["Reply": speed])
+        replyHandler(["Reply": speed as AnyObject])
     }
-    func deviceDidConnect(device: String) {
+    
+    func deviceDidConnect(_ device: String) {
         self.write("Connected: \(device)")
     }
-    func deviceDidDisconnect(device: String) {
+    func deviceDidDisconnect(_ device: String) {
         self.write("Disconnected: \(device)")
     }
     
-    private func OnTimerFired(accelerating : Bool) {
+    fileprivate func OnTimerFired(_ accelerating : Bool) {
         
     }
 }
@@ -550,7 +556,7 @@ extension SCNQuaternion {
 
 extension SCNVector3 {
     
-    func multiplyByMatrix4(mat4: SCNMatrix4) -> SCNVector3 {
+    func multiplyByMatrix4(_ mat4: SCNMatrix4) -> SCNVector3 {
         
         return SCNVector3(
             self.x * mat4.m11 + self.y * mat4.m21 + self.z * mat4.m31,
@@ -574,7 +580,7 @@ extension GLKQuaternion {
      - Returns: returns the angle in radians
      
      */
-    func AngleFromQuaternion(quat : GLKQuaternion) -> Float {
+    func AngleFromQuaternion(_ quat : GLKQuaternion) -> Float {
         let inv = GLKQuaternionInvert(self)
         
         let result = GLKQuaternionMultiply(quat, inv)

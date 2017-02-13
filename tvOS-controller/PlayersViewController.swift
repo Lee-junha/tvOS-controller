@@ -62,9 +62,9 @@ class PlayersViewController: UIViewController, TVCTVSessionDelegate {
         // Dispose of any resources that can be recreated.
     }
     
-    override func prepareForSegue(segue: UIStoryboardSegue, sender: AnyObject?) {
+    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         if segue.identifier == "StartGame" {
-            if let vc = segue.destinationViewController as? ViewController {
+            if let vc = segue.destination as? ViewController {
                 vc.gameObjects = players
             }
         }
@@ -106,7 +106,7 @@ class PlayersViewController: UIViewController, TVCTVSessionDelegate {
         
         
         let light = SCNLight()
-        light.type = SCNLightTypeSpot
+        light.type = SCNLight.LightType.spot
         
         lightNode1.light = light
         lightNode2.light = light
@@ -126,9 +126,9 @@ class PlayersViewController: UIViewController, TVCTVSessionDelegate {
         
     }
     
-    func addNewPlayer(device : String) {
+    func addNewPlayer(_ device : String) {
         
-        numberOfPlayers++
+        numberOfPlayers = numberOfPlayers + 1
         var newPlayer = GameObject()
         newPlayer.playerID = device
         newPlayer.ID = numberOfPlayers
@@ -158,15 +158,15 @@ class PlayersViewController: UIViewController, TVCTVSessionDelegate {
         players.append(newPlayer)
     }
     
-    func AddPlayerToScreen(view : SCNView, lightNode : SCNNode, cameraNode : SCNNode) {
+    func AddPlayerToScreen(_ view : SCNView, lightNode : SCNNode, cameraNode : SCNNode) {
         
         if let carScene : SCNScene = SCNScene(named: "gameAssets.scnassets/rc_car.dae") {
-            if let node = carScene.rootNode.childNodeWithName("rccarBody", recursively: false)  {
+            if let node = carScene.rootNode.childNode(withName: "rccarBody", recursively: false)  {
                 node.position = SCNVector3Make(0, 0, 0)
                 node.rotation = SCNVector4Make(0, 1, 0, Float(M_PI))
-                node.physicsBody = SCNPhysicsBody.staticBody()
+                node.physicsBody = SCNPhysicsBody.static()
                 node.name = "Car"
-                let action = SCNAction.repeatActionForever(SCNAction.rotateByX(0, y: 0.5, z: 0, duration: 0.5))
+                let action = SCNAction.repeatForever(SCNAction.rotateBy(x: 0, y: 0.5, z: 0, duration: 0.5))
                 node.runAction(action)
                 let constraint = SCNLookAtConstraint(target: node)
                 
@@ -185,11 +185,11 @@ class PlayersViewController: UIViewController, TVCTVSessionDelegate {
         
     }
     
-    func changePlayerColour(i : Int, playerFromDevice: String) {
-        
-        for var j = 0; j < numberOfPlayers; ++j {
+    func changePlayerColour(_ i : Int, playerFromDevice: String) {
+        numberOfPlayers = numberOfPlayers + 1
+        for j in 0 ..< numberOfPlayers {
             if players[j].playerID == playerFromDevice {
-                if let node = PlayerViews[j].scene!.rootNode.childNodeWithName("Car", recursively: false) {
+                if let node = PlayerViews[j].scene!.rootNode.childNode(withName: "Car", recursively: false) {
                     players[j].colourID = (players[j].colourID + i) % 9
                     node.geometry?.materials[0].diffuse.contents = players[j].GetColour(players[j].colourID)
                     
@@ -198,22 +198,22 @@ class PlayersViewController: UIViewController, TVCTVSessionDelegate {
         }
     }
     
-    func playerIsReady(playerFromDevice : String) {
-        
-        for var j = 0; j < numberOfPlayers; ++j {
+    func playerIsReady(_ playerFromDevice : String) {
+        numberOfPlayers = numberOfPlayers + 1
+        for j in 0 ..< numberOfPlayers {
             if players[j].playerID == playerFromDevice {
                 switch j {
                 case 0:
-                    ready1.hidden = !ready1.hidden
+                    ready1.isHidden = !ready1.isHidden
                     break
                 case 1:
-                    Ready2.hidden = !Ready2.hidden
+                    Ready2.isHidden = !Ready2.isHidden
                     break
                 case 2:
-                    Ready3.hidden = !Ready3.hidden
+                    Ready3.isHidden = !Ready3.isHidden
                     break
                 case 3:
-                    Ready4.hidden = !Ready4.hidden
+                    Ready4.isHidden = !Ready4.isHidden
                     break
                 default:
                     break
@@ -222,33 +222,28 @@ class PlayersViewController: UIViewController, TVCTVSessionDelegate {
         }
     }
     
-    func deviceDidConnect(device: String) {
+    func deviceDidConnect(_ device: String) {
         print("Player joined!")
         
         addNewPlayer(device)
     }
     
-    func deviceDidDisconnect(device: String) {
+    func deviceDidDisconnect(_ device: String) {
         print("Player left! :(")
         
-        numberOfPlayers--
-        
-        //remove player from list
-        for var i = 0; i < players.count; ++i {
-            if players[i].playerID == device {
-                players.removeAtIndex(i)
-            }
-        }
+//        numberOfPlayers -= 1
+//        
+//        //remove player from list
+//        var count = players.count
+//        count = count + 1
+//        for i in 0 ..< count {
+//            if players[i].playerID == device {
+//                players.remove(at: i)
+//            }
+//        }
     }
     
-    func didReceiveMessage(message: [String : AnyObject], fromDevice: String) {
-        print("received message")
-        
-        //join game
-        //addNewPlayer(fromDevice)
-    }
-    
-    func didReceiveMessage(message: [String : AnyObject], fromDevice: String, replyHandler: ([String : AnyObject]) -> Void) {
+    internal func didReceiveMessage(_ message: [String : Any], fromDevice: String, replyHandler: ([String : Any]) -> Void) {
         print("received message with reply handler")
         
         if message.keys.first! == "Colour" {
@@ -262,6 +257,11 @@ class PlayersViewController: UIViewController, TVCTVSessionDelegate {
         //join game
         //addNewPlayer(fromDevice)
     }
-    
+    internal func didReceiveMessage(_ message: [String : Any], fromDevice: String) {
+        print("received message")
+        
+        //join game
+        //addNewPlayer(fromDevice)
+    }
 
 }

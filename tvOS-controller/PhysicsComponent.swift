@@ -27,29 +27,29 @@ struct GameObject {
     //device ID to be used for multiplayer
     var playerID : String? = nil
     
-    func GetColour(i : Int) -> UIColor {
+    func GetColour(_ i : Int) -> UIColor {
         
         switch i {
         case 0:
-            return UIColor.blackColor()
+            return UIColor.black
         case 1:
-            return UIColor.lightGrayColor()
+            return UIColor.lightGray
         case 2:
-            return UIColor.redColor()
+            return UIColor.red
         case 3:
-            return UIColor.greenColor()
+            return UIColor.green
         case 4:
-            return UIColor.blueColor()
+            return UIColor.blue
         case 5:
-            return UIColor.yellowColor()
+            return UIColor.yellow
         case 6:
-            return UIColor.magentaColor()
+            return UIColor.magenta
         case 7:
-            return UIColor.orangeColor()
+            return UIColor.orange
         case 8:
-            return UIColor.purpleColor()
+            return UIColor.purple
         default:
-            return UIColor.whiteColor()
+            return UIColor.white
         }
     }
 }

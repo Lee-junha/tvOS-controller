@@ -13,16 +13,16 @@ let SERVICE_NAME = "_probonjore._tcp."
 
 let NET_SERVICE_NAME = "com.fpstudios.iPhone-controller Lauren"
 
-let CURRENT_DEVICE_VENDOR_ID:String = UIDevice.currentDevice().identifierForVendor!.UUIDString
+let CURRENT_DEVICE_VENDOR_ID:String = UIDevice.current.identifierForVendor!.uuidString
 
 enum MessageDirection : CustomStringConvertible {
-    case Incoming
-    case Outgoing
+    case incoming
+    case outgoing
     
     var description: String {
         switch self {
-        case .Incoming: return "Incoming"
-        case .Outgoing: return "Outgoing"
+        case .incoming: return "Incoming"
+        case .outgoing: return "Outgoing"
         }
     }
 }
@@ -58,7 +58,7 @@ struct Message {
     let senderDeviceID:String
     let targetDeviceID:String?
     let replyID:Int?
-    let contents:[String:AnyObject]?
+    let contents:[String:Any]?
     
     var isForThisDevice:Bool {
         if let targetDeviceID = self.targetDeviceID {
@@ -67,41 +67,41 @@ struct Message {
         return true
     }
     
-    init(type: MessageType, replyID: Int? = nil, contents: [String:AnyObject]? = nil, targetDeviceID: String? = nil) {
+    init(type: MessageType, replyID: Int? = nil, contents: [String:Any]? = nil, targetDeviceID: String? = nil) {
         self.type = type
         self.senderDeviceID = CURRENT_DEVICE_VENDOR_ID
         self.targetDeviceID = targetDeviceID
         self.replyID = replyID
         self.contents = contents
-        self.direction = .Outgoing
+        self.direction = .outgoing
     }
     
-    var dictionary:[String:AnyObject] {
-        var rv:[String:AnyObject] = ["senderDeviceID":senderDeviceID]
+    var dictionary:[String:Any] {
+        var rv:[String:Any] = ["senderDeviceID":senderDeviceID as Any]
         
         if let contents = self.contents {
-            rv[type.rawValue] = contents
+            rv[type.rawValue] = contents as Any?
         }
         else {
-            rv[type.rawValue] = type.rawValue
+            rv[type.rawValue] = type.rawValue as Any?
         }
         
         if let targetDeviceID = self.targetDeviceID {
-            rv["targetDeviceID"] = targetDeviceID
+            rv["targetDeviceID"] = targetDeviceID as Any?
         }
         
         if let replyID = self.replyID {
-            rv["replyID"] = replyID
+            rv["replyID"] = replyID as Any?
         }
         
         return rv
     }
-    var data:NSData {
-        return NSKeyedArchiver.archivedDataWithRootObject(self.dictionary)
+    var data:Data {
+        return NSKeyedArchiver.archivedData(withRootObject: self.dictionary)
     }
     
-    init?(dictionary:[String:AnyObject]) {
-        self.direction = .Incoming
+    init?(dictionary:[String:Any]) {
+        self.direction = .incoming
         
         self.senderDeviceID = dictionary["senderDeviceID"] as! String
         self.targetDeviceID = dictionary["targetDeviceID"] as? String
@@ -110,11 +110,11 @@ struct Message {
         for type in MessageType.cases {
             if let object = dictionary[type.rawValue] {
                 self.type = MessageType(rawValue: type.rawValue)!
-                if let text = object as? String where text == type.rawValue {
+                if let text = object as? String, text == type.rawValue {
                     self.contents = nil
                     return
                 }
-                else if let message = object as? [String:AnyObject] {
+                else if let message = object as? [String:Any] {
                     self.contents = message
                     return
                 }
@@ -124,9 +124,9 @@ struct Message {
         return nil
     }
     
-    init?(data:NSData) {
-        if let object = try? NSKeyedUnarchiver.unarchiveTopLevelObjectWithData(data) {
-            if let dictionary = object as? [String:AnyObject] {
+    init?(data:Data) {
+        if let object = NSKeyedUnarchiver.unarchiveObject(with: data) {
+            if let dictionary = object as? [String:Any] {
                 self.init(dictionary: dictionary)
                 return
             }
@@ -137,8 +137,8 @@ struct Message {
 }
 
 extension GCDAsyncSocket {
-    func sendMessageObject(message:Message, withTimeout: NSTimeInterval = -1.0) {
-        self.writeData(message.data, withTimeout: withTimeout, tag: 0)
+    func sendMessageObject(_ message:Message, withTimeout: TimeInterval = -1.0) {
+        self.write(message.data, withTimeout: withTimeout, tag: 0)
     }
 }
 
