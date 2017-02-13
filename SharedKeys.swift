@@ -53,21 +53,21 @@ extension MessageType : CustomStringConvertible {
 }
 
 struct Message {
-    let direction:MessageDirection
-    let type:MessageType
-    let senderDeviceID:String
-    let targetDeviceID:String?
-    let replyID:Int?
-    let contents:[String:Any]?
+    let direction: MessageDirection
+    let type: MessageType
+    let senderDeviceID: String
+    let targetDeviceID: String?
+    let replyID: Int?
+    let contents: [String: Any]?
     
-    var isForThisDevice:Bool {
+    var isForThisDevice: Bool {
         if let targetDeviceID = self.targetDeviceID {
             return targetDeviceID == CURRENT_DEVICE_VENDOR_ID
         }
         return true
     }
     
-    init(type: MessageType, replyID: Int? = nil, contents: [String:Any]? = nil, targetDeviceID: String? = nil) {
+    init(type: MessageType, replyID: Int? = nil, contents: [String: Any]? = nil, targetDeviceID: String? = nil) {
         self.type = type
         self.senderDeviceID = CURRENT_DEVICE_VENDOR_ID
         self.targetDeviceID = targetDeviceID
@@ -76,8 +76,8 @@ struct Message {
         self.direction = .outgoing
     }
     
-    var dictionary:[String:Any] {
-        var rv:[String:Any] = ["senderDeviceID":senderDeviceID as Any]
+    var dictionary: [String: Any] {
+        var rv: [String: Any] = ["senderDeviceID":senderDeviceID as Any]
         
         if let contents = self.contents {
             rv[type.rawValue] = contents as Any?
@@ -96,11 +96,11 @@ struct Message {
         
         return rv
     }
-    var data:Data {
+    var data: Data {
         return NSKeyedArchiver.archivedData(withRootObject: self.dictionary)
     }
     
-    init?(dictionary:[String:Any]) {
+    init?(dictionary: [String:Any]) {
         self.direction = .incoming
         
         self.senderDeviceID = dictionary["senderDeviceID"] as! String
@@ -114,7 +114,7 @@ struct Message {
                     self.contents = nil
                     return
                 }
-                else if let message = object as? [String:Any] {
+                else if let message = object as? [String: Any] {
                     self.contents = message
                     return
                 }
@@ -124,9 +124,9 @@ struct Message {
         return nil
     }
     
-    init?(data:Data) {
+    init?(data: Data) {
         if let object = NSKeyedUnarchiver.unarchiveObject(with: data) {
-            if let dictionary = object as? [String:Any] {
+            if let dictionary = object as? [String: Any] {
                 self.init(dictionary: dictionary)
                 return
             }
@@ -137,7 +137,7 @@ struct Message {
 }
 
 extension GCDAsyncSocket {
-    func sendMessageObject(_ message:Message, withTimeout: TimeInterval = -1.0) {
+    func sendMessageObject(_ message: Message, withTimeout: TimeInterval = -1.0) {
         self.write(message.data, withTimeout: withTimeout, tag: 0)
     }
 }

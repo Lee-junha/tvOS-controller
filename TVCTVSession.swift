@@ -17,8 +17,8 @@ let ERROR_REPLY_FAILED = NSError(domain: "com.fpstudios.tvOSController", code: -
 @objc
 protocol TVCTVSessionDelegate : NSObjectProtocol {
     
-    func didReceiveMessage(_ message: [String : Any], fromDevice: String)
-    func didReceiveMessage(_ message: [String : Any], fromDevice: String, replyHandler: ([String : Any]) -> Void)
+    func didReceiveMessage(_ message: [String: Any], fromDevice: String)
+    func didReceiveMessage(_ message: [String: Any], fromDevice: String, replyHandler: ([String: Any]) -> Void)
 
     func deviceDidConnect(_ device: String)
     func deviceDidDisconnect(_ device: String)
@@ -45,7 +45,7 @@ open class TVCTVSession : NSObject, NetServiceDelegate, GCDAsyncSocketDelegate, 
         return Set<String>(values)
     }
             
-    open func broadcastMessage(_ message: [String : Any], replyHandler: ((String, [String : Any]) -> Void)?, errorHandler: ((NSError) -> Void)?) {
+    open func broadcastMessage(_ message: [String: Any], replyHandler: ((String, [String: Any]) -> Void)?, errorHandler: ((NSError) -> Void)?) {
         if let rh = replyHandler {
             for sock in devSock.keys {
                 replyIdentifierCounter = replyIdentifierCounter + 1
@@ -56,7 +56,7 @@ open class TVCTVSession : NSObject, NetServiceDelegate, GCDAsyncSocketDelegate, 
                 
                 group.notify(queue: DispatchQueue.main) {
                     if let params = self.replyMessages[replyID] {
-//                        rh(params)
+                        rh(params.0, params.1)
                     }
                     else {
                         errorHandler?(ERROR_REPLY_FAILED)
@@ -72,7 +72,7 @@ open class TVCTVSession : NSObject, NetServiceDelegate, GCDAsyncSocketDelegate, 
         }        
     }
     
-    open func sendMessage(_ deviceID:String, message: [String : Any], replyHandler: ((String, [String : Any]) -> Void)?, errorHandler: ((NSError) -> Void)?) {
+    open func sendMessage(_ deviceID:String, message: [String: Any], replyHandler: ((String, [String: Any]) -> Void)?, errorHandler: ((NSError) -> Void)?) {
         
         let socklist = devSock.filter { $0.1 == deviceID }
         
@@ -86,7 +86,7 @@ open class TVCTVSession : NSObject, NetServiceDelegate, GCDAsyncSocketDelegate, 
                 
                 group.notify(queue: DispatchQueue.main) {
                     if let params = self.replyMessages[replyID] {
-//                        rh(params)
+                        rh(params.0, params.1)
                     }
                     else {
                         errorHandler?(ERROR_REPLY_FAILED)
@@ -104,7 +104,7 @@ open class TVCTVSession : NSObject, NetServiceDelegate, GCDAsyncSocketDelegate, 
         }
     }
     
-    fileprivate func dispatchReply(_ replyHandler: ((String, [String : Any]) -> Void)?, errorHandler: ((NSError) -> Void)?) -> Int {
+    fileprivate func dispatchReply(_ replyHandler: ((String, [String: Any]) -> Void)?, errorHandler: ((NSError) -> Void)?) -> Int {
         replyIdentifierCounter = replyIdentifierCounter + 1
         let replyID = replyIdentifierCounter
         let group = DispatchGroup()
@@ -113,7 +113,7 @@ open class TVCTVSession : NSObject, NetServiceDelegate, GCDAsyncSocketDelegate, 
         
         group.notify(queue: DispatchQueue.main) {
             if let params = self.replyMessages[replyID] {
-//                replyHandler?(params)
+                replyHandler?(params.0, params.1)
             }
             else {
                 errorHandler?(ERROR_REPLY_FAILED)
@@ -165,7 +165,7 @@ open class TVCTVSession : NSObject, NetServiceDelegate, GCDAsyncSocketDelegate, 
     
     // curried function to send the user's reply to the sender
     // calling with the first set of arguments returns another function which the user then calls
-    fileprivate func sendReply(_ sock: GCDAsyncSocket, _ replyID:Int, _ reply:[String:AnyObject]) {
+    fileprivate func sendReply(_ sock: GCDAsyncSocket, _ replyID:Int, _ reply:[String: Any]) {
         sock.sendMessageObject(Message(type: .Reply, replyID: replyID, contents: reply))
     }
     
@@ -192,7 +192,10 @@ open class TVCTVSession : NSObject, NetServiceDelegate, GCDAsyncSocketDelegate, 
             switch message.type {
             case .Message:
                 if let replyID = message.replyID {
-//                    self.delegate?.didReceiveMessage(message.contents ?? [:], fromDevice: message.senderDeviceID, replyHandler: sendReply(sock, replyID) )
+                    self.delegate?.didReceiveMessage(message.contents ?? [:], fromDevice: message.senderDeviceID, replyHandler: { [weak self] reply in
+                        guard let `self` = self else { return }
+                        self.sendReply(sock, replyID, reply)
+                    })
                 }
                 else {
                     self.delegate?.didReceiveMessage(message.contents ?? [:], fromDevice: message.senderDeviceID)

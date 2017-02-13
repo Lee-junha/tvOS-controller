@@ -20,11 +20,11 @@ protocol TVCPhoneSessionDelegate : class {
     func didConnect()
     func didDisconnect()
     
-    func didReceiveBroadcast(_ message: [String : Any], replyHandler: ([String : Any]) -> Void)
-    func didReceiveBroadcast(_ message: [String : Any])
+    func didReceiveBroadcast(_ message: [String: Any], replyHandler: ([String: Any]) -> Void)
+    func didReceiveBroadcast(_ message: [String: Any])
     
-    func didReceiveMessage(_ message: [String : Any])
-    func didReceiveMessage(_ message: [String : Any], replyHandler: ([String : Any]) -> Void)
+    func didReceiveMessage(_ message: [String: Any])
+    func didReceiveMessage(_ message: [String: Any], replyHandler: ([String: Any]) -> Void)
     
 }
 
@@ -41,14 +41,14 @@ open class TVCPhoneSession : NSObject, NetServiceBrowserDelegate, NetServiceDele
     internal var arrDevices:Set<NetService> = []
 
     internal var replyGroups:[Int:DispatchGroup] = [:]
-    internal var replyMessages:[Int:[String:Any]] = [:]
+    internal var replyMessages:[Int:[String: Any]] = [:]
     internal var replyIdentifierCounter:Int = 0
 
     open var connected:Bool {
         return self.selectedSocket != nil
     }
     
-    open func sendMessage(_ message: [String : Any], replyHandler: (([String : Any]) -> Void)?, errorHandler: ((NSError) -> Void)?) {
+    open func sendMessage(_ message: [String: Any], replyHandler: (([String: Any]) -> Void)?, errorHandler: ((NSError) -> Void)?) {
         
         if let selSock = self.selectedSocket {
             if let rh = replyHandler {
@@ -105,6 +105,7 @@ open class TVCPhoneSession : NSObject, NetServiceBrowserDelegate, NetServiceDele
                 do {
                     try coSocket?.connect(toAddress: address)
                     self.dictSockets[service.name] = coSocket
+                    print ("connect to \(address)\n")
                     return true
                 }
                 catch let error as NSError {
@@ -122,7 +123,7 @@ open class TVCPhoneSession : NSObject, NetServiceBrowserDelegate, NetServiceDele
         self.coServiceBrowser.searchForServices(ofType: SERVICE_NAME, inDomain: "local.")
         print("Browsing Stopped")
     }
-    open func netServiceBrowser(_ browser: NetServiceBrowser, didNotSearch errorDict: [String : NSNumber]) {
+    open func netServiceBrowser(_ browser: NetServiceBrowser, didNotSearch errorDict: [String: NSNumber]) {
         self.coServiceBrowser.stop()
         self.coServiceBrowser.searchForServices(ofType: SERVICE_NAME, inDomain: "local.")
         print("Browsing Stopped")
@@ -140,7 +141,7 @@ open class TVCPhoneSession : NSObject, NetServiceBrowserDelegate, NetServiceDele
     
     
     // MARK: NSNetServiceDelegate
-    open func netService(_ sender: NetService, didNotResolve errorDict: [String : NSNumber]) {
+    open func netService(_ sender: NetService, didNotResolve errorDict: [String: NSNumber]) {
         sender.delegate = self
     }
     open func netServiceDidResolveAddress(_ sender: NetService) {
@@ -156,7 +157,7 @@ open class TVCPhoneSession : NSObject, NetServiceBrowserDelegate, NetServiceDele
         
         delegate?.didConnect()
     }
-    open func socketDidDisconnect(_ sock: GCDAsyncSocket!, withError err: NSError!) {
+    open func socketDidDisconnect(_ sock: GCDAsyncSocket!, withError err: Error!) {
         delegate?.didDisconnect()
         
         // clearout pending replies and generate errors for them
@@ -170,7 +171,7 @@ open class TVCPhoneSession : NSObject, NetServiceBrowserDelegate, NetServiceDele
 
     // curried function to send the user's reply to the sender
     // calling with the first set of arguments returns another function which the user then calls
-    fileprivate func sendReply(_ sock: GCDAsyncSocket, _ replyID:Int, _ reply:[String:Any]) {
+    fileprivate func sendReply(_ sock: GCDAsyncSocket, _ replyID:Int, _ reply:[String: Any]) {
         sock.sendMessageObject(Message(type: .Reply, replyID: replyID, contents: reply))
     }
     open func socket(_ sock: GCDAsyncSocket!, didRead data: Data!, withTag tag: Int) {
@@ -181,7 +182,7 @@ open class TVCPhoneSession : NSObject, NetServiceBrowserDelegate, NetServiceDele
             case .Reply:
                 if let replyID = message.replyID, let group = replyGroups.removeValue(forKey: replyID) {
                     if let reply = message.contents {
-                        replyMessages[replyID] = reply as [String : Any]?
+                        replyMessages[replyID] = reply as [String: Any]?
                     }
                     group.leave()
                 }
@@ -193,10 +194,13 @@ open class TVCPhoneSession : NSObject, NetServiceBrowserDelegate, NetServiceDele
             case .Broadcast:
                 if let contents = message.contents {
                     if let replyID = message.replyID {
-//                        self.delegate?.didReceiveBroadcast(contents as [String : Any], replyHandler: sendReply(sock, replyID))
+                        self.delegate?.didReceiveBroadcast(contents, replyHandler: { [weak self] reply in
+                            guard let `self` = self else { return }
+                            self.sendReply(sock, replyID, reply)
+                        })
                     }
                     else {
-                        self.delegate?.didReceiveBroadcast(contents as [String : Any])
+                        self.delegate?.didReceiveBroadcast(contents)
                     }
                 }
                 else {
@@ -206,10 +210,13 @@ open class TVCPhoneSession : NSObject, NetServiceBrowserDelegate, NetServiceDele
             case .Message:
                 if let contents = message.contents {
                     if let replyID = message.replyID {
-//                        self.delegate?.didReceiveMessage(contents as [String : Any], replyHandler: sendReply(sock, replyID))
+                        self.delegate?.didReceiveMessage(contents, replyHandler: { [weak self] reply in
+                            guard let `self` = self else { return }
+                            self.sendReply(sock, replyID, reply)
+                        })
                     }
                     else {
-                        self.delegate?.didReceiveMessage(contents as [String : Any])
+                        self.delegate?.didReceiveMessage(contents)
                     }
                 }
                 else {
