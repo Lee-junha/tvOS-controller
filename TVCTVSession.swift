@@ -15,7 +15,7 @@ let ERROR_REPLY_FAILED = NSError(domain: "com.fpstudios.tvOSController", code: -
 
 @available(tvOS 9.0, *)
 @objc
-protocol TVCTVSessionDelegate : NSObjectProtocol {
+protocol TVCTVSessionDelegate: NSObjectProtocol {
     
     func didReceiveMessage(_ message: [String: Any], fromDevice: String)
     func didReceiveMessage(_ message: [String: Any], fromDevice: String, replyHandler: ([String: Any]) -> Void)
@@ -27,20 +27,20 @@ protocol TVCTVSessionDelegate : NSObjectProtocol {
 
 @available(tvOS 9.0, *)
 @objc
-open class TVCTVSession : NSObject, NetServiceDelegate, GCDAsyncSocketDelegate, NetServiceBrowserDelegate {
-    weak var delegate:TVCTVSessionDelegate?
+open class TVCTVSession: NSObject, NetServiceDelegate, GCDAsyncSocketDelegate, NetServiceBrowserDelegate {
+    weak var delegate: TVCTVSessionDelegate?
 
-    internal var service:NetService!
-    internal var socket:GCDAsyncSocket!
-    internal var devSock:[GCDAsyncSocket: String?] = [:]
+    internal var service: NetService!
+    internal var socket: GCDAsyncSocket!
+    internal var devSock: [GCDAsyncSocket: String?] = [:]
     
-    internal var replyGroups:[Int: DispatchGroup] = [:]
-    internal var replyMessages:[Int:(String, [String: Any])] = [:]
+    internal var replyGroups: [Int: DispatchGroup] = [:]
+    internal var replyMessages: [Int:(String, [String: Any])] = [:]
     internal var replyIdentifierCounter:Int = 0
     
     internal let delegateQueue = DispatchQueue.main
     
-    open var connectedDevices:Set<String> {
+    open var connectedDevices: Set<String> {
         let values = devSock.values.flatMap { $0 }
         return Set<String>(values)
     }
@@ -148,7 +148,7 @@ open class TVCTVSession : NSObject, NetServiceDelegate, GCDAsyncSocketDelegate, 
         
     }
     
-    open func socketDidDisconnect(_ sock: GCDAsyncSocket!, withError err: NSError!) {
+    open func socketDidDisconnect(_ sock: GCDAsyncSocket!, withError err: Error!) {
         if let oldDevice = devSock.removeValue(forKey: sock), let dev = oldDevice {
             self.delegate?.deviceDidDisconnect(dev)
             print("Device Disconnected \(dev) from socket \(sock)")
@@ -165,7 +165,7 @@ open class TVCTVSession : NSObject, NetServiceDelegate, GCDAsyncSocketDelegate, 
     
     // curried function to send the user's reply to the sender
     // calling with the first set of arguments returns another function which the user then calls
-    fileprivate func sendReply(_ sock: GCDAsyncSocket, _ replyID:Int, _ reply:[String: Any]) {
+    fileprivate func sendReply(_ sock: GCDAsyncSocket, _ replyID: Int, _ reply: [String: Any]) {
         sock.sendMessageObject(Message(type: .Reply, replyID: replyID, contents: reply))
     }
     
@@ -229,7 +229,6 @@ open class TVCTVSession : NSObject, NetServiceDelegate, GCDAsyncSocketDelegate, 
                 print("     CP1250 : \(testString)")
             }
         }
-        
     }
 }
 

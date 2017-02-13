@@ -13,9 +13,9 @@ let SERVICE_NAME = "_probonjore._tcp."
 
 let NET_SERVICE_NAME = "com.fpstudios.iPhone-controller Lauren"
 
-let CURRENT_DEVICE_VENDOR_ID:String = UIDevice.current.identifierForVendor!.uuidString
+let CURRENT_DEVICE_VENDOR_ID: String = UIDevice.current.identifierForVendor!.uuidString
 
-enum MessageDirection : CustomStringConvertible {
+enum MessageDirection: CustomStringConvertible {
     case incoming
     case outgoing
     
@@ -28,7 +28,7 @@ enum MessageDirection : CustomStringConvertible {
 }
 
 
-enum MessageType : String {
+enum MessageType: String {
     static let cases = [Message, Broadcast, Reply, RequestDeviceID, SendingDeviceID]
     
     case Message = "kMessage"
@@ -100,7 +100,7 @@ struct Message {
         return NSKeyedArchiver.archivedData(withRootObject: self.dictionary)
     }
     
-    init?(dictionary: [String:Any]) {
+    init?(dictionary: [String: Any]) {
         self.direction = .incoming
         
         self.senderDeviceID = dictionary["senderDeviceID"] as! String
