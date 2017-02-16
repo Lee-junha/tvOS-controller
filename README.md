@@ -7,7 +7,7 @@ Control tvOS games &amp; apps from your iPhone
 
 ## Requirements 
 
-- iOS 9.0+ / Mac OS X 10.11+
+- iOS 9.0+ / TVOS 9.0+ / Mac OS X 10.11+
 - Xcode 8 / Swift 3.0
 
 ## Platform Support
