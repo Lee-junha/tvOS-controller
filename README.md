@@ -1,5 +1,5 @@
 [![Language](https://img.shields.io/badge/Language-Swift3.0-brightgreen.svg?style=flat)](https://developer.apple.com/swift/)
-[![Platforms iOS | tvOS](https://img.shields.io/badge/Platform-iOS%20%7C%20tvOS-lightgrey.svg?style=flat)](https://developer.apple.com/swift/)
+[![Platforms iOS | tvOS](https://img.shields.io/badge/Platform-iOS%20%7C%20tvOS-lightgrey.svg?style=flat)](https://developer.apple.com/download/)
 [![License MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=flat)](https://github.com/fluidpixel/tvOS-controller/blob/master/LICENSE)
 
 # tvOS-controller
