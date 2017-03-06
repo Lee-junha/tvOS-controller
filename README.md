@@ -17,7 +17,8 @@ Control tvOS games &amp; apps from your iPhone
 
 ## Integration
 
-``` tvOS
+tvOS
+```
 let remote = TVCTVSession()
 ...
 remote.delegate = self
@@ -27,7 +28,8 @@ extension YourClass: TVCTVSessionDelegate {
 }
 ```
 
-``` iOS
+iOS
+```
 let remote = TVCPhoneSession()
 ...
 remote.delegate = self
